@@ -20,10 +20,37 @@ export default function App() {
     }
   };
 
+
+  const handleFileSubmission = async () => {
+    if (!jsonFile) {
+      alert('Please select a file first.');
+      return;
+    }
+  
+    const formData = new FormData();
+    formData.append('file', jsonFile);
+  
+    try {
+      const response = await fetch('http://localhost:3000/upload', {
+        method: 'POST',
+        body: formData,
+      });
+  
+      const result = await response.text();
+      console.log(result.message)
+      alert("file uploaded successfully");
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      alert('Failed to upload file.');
+    }
+  };
+
+  
   const onDrop = useCallback((acceptedFiles) => {
     const file = acceptedFiles[0];
     if (file && file.type === "application/json") {
       setJsonFile(file);
+      console.log(file)
     } else {
       alert("Please upload a valid JSON file.");
     }
@@ -63,15 +90,22 @@ export default function App() {
           <div className="upload-section mt-8 w-full max-w-md">
             <h2 className="text-2xl font-bold mb-2">Upload JSON File</h2>
             <div className="flex items-center">
-              <input
-                type="file"
-                accept=".json"
-                onChange={handleFileChange}
-                className="appearance-none bg-transparent border-none w-full text-gray-700 mr-3 py-1 px-2 leading-tight focus:outline-none"
-              />
-              <button className="flex-shrink-0 bg-blue-500 hover:bg-blue-700 border-blue-500 hover:border-blue-700 text-sm border-4 text-white py-1 px-2 rounded">
-                <FaUpload />
-              </button>
+
+
+  <input
+    type="file"
+    name="file" 
+    accept=".json"
+    onChange={handleFileChange}
+    className="appearance-none bg-transparent border-none w-full text-gray-700 mr-3 py-1 px-2 leading-tight focus:outline-none"
+  />
+  <button 
+    className="flex-shrink-0 bg-blue-500 hover:bg-blue-700 border-blue-500 hover:border-blue-700 text-sm border-4 text-white py-1 px-2 rounded" 
+    onClick={handleFileSubmission}
+  >
+    <FaUpload />
+  </button>
+
             </div>
             {jsonFile && <p className="mt-2 text-blue-600">Uploaded: {jsonFile.name}</p>}
           </div>
