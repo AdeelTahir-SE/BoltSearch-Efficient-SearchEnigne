@@ -1,5 +1,4 @@
 import React from "react";
-
 export function DotBackground({children}) {
   return (
     (<div

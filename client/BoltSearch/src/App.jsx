@@ -2,7 +2,6 @@ import React, { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { DotBackground } from './Components/DotBackground';
 import { FaSearch, FaUpload } from 'react-icons/fa';
-import { ShootingStars } from './Components/ShootingStars';
 
 export default function App() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -40,7 +39,6 @@ export default function App() {
   return (
     
     <DotBackground className="flex flex-col items-center justify-center">
-      <ShootingStars/>
       <section>
         <header className="w-full text-white p-4 text-center">
           <h1 className="text-7xl font-bold text-transparent bg-clip-text bg-gradient-to-b from-white via-slate-400 to-slate-950">Bolt Search</h1>
@@ -54,7 +52,7 @@ export default function App() {
                 value={searchQuery}
                 onChange={handleSearchChange}
                 placeholder="Enter search query"
-                className="appearance-none bg-transparent border-none w-full text-gray-700 mr-3 py-1 px-2 hover:bg-white leading-tight focus:outline-none"
+                className="appearance-none bg-transparent border-none w-full text-gray-700 mr-3 py-1 px-2  leading-tight focus:outline-none"
               />
               <button type="submit" className="flex-shrink-0 bg-blue-500 hover:bg-blue-700 border-blue-500 hover:border-blue-700 text-sm border-4 text-white py-1 px-2 rounded">
                 <FaSearch />
