@@ -12,10 +12,12 @@
   "description": "",
   "dependencies": {
     "cors": "^2.8.5",
+    "csvtojson": "^2.0.10",
     "express": "^4.21.1",
     "express-fileupload": "^1.5.1",
     "fs-extra": "^11.2.0",
     "jsdom": "^25.0.1",
-    "lemmatizer": "^0.0.1"
+    "lemmatizer": "^0.0.1",
+    "orc": "^0.0.17"
   }
 }
