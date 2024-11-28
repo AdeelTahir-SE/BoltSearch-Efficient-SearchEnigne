@@ -1,42 +1,39 @@
 import pandas as pd
-dfT=pd.DataFrame(pd.read_csv('./server/jsondataset/Tags.csv', encoding='ISO-8859-1'))
-dfQ=pd.DataFrame(pd.read_csv('./server/jsondataset/Questions.csv', encoding='ISO-8859-1'))
-dfA=pd.DataFrame(pd.read_csv('./server/jsondataset/Answers.csv', encoding='ISO-8859-1'))
+# Read the CSV files
 
+dfT = pd.DataFrame(pd.read_csv('./server/jsondataset/Tags.csv', encoding='ISO-8859-1'))
+dfQ = pd.DataFrame(pd.read_csv('./server/jsondataset/Questions.csv', encoding='ISO-8859-1'))
+dfA = pd.DataFrame(pd.read_csv('./server/jsondataset/Answers.csv', encoding='ISO-8859-1'))
 
-# drops the columns that are not needed
-dfQ=dfQ.drop(columns=["OwnerUserId","ClosedDate"])
+# Drop columns that are not needed
+dfQ = dfQ.drop(columns=["OwnerUserId", "ClosedDate"])
 
-# merges the questions.csv and tags.csv
-dfm=dfQ.merge(dfT,on="Id",how="left")
+# Merge the questions.csv and tags.csv
+dfm = dfQ.merge(dfT, on="Id", how="left")
 
-# groups the tags by Id and joins them with a comma
+# Group the tags by Id and join them with a comma
 dfm['Tag'] = dfm.groupby('Id')['Tag'].transform(
     lambda x: ','.join(str(tag) for tag in x.dropna().unique())
 )
+# Drop the duplicates after grouping
+dfm = dfm.drop_duplicates(subset='Id', keep='first')
 
-# drops the duplicates
-dfm=dfm.drop_duplicates(subset='Id', keep='first',)
+# Drop the columns that are not needed from the answers DataFrame
+dfA = dfA.drop(columns=["Id","OwnerUserId", "CreationDate", "Score"])
 
-# drops the columns that are not needed
-dfA=dfA.drop(columns=["OwnerUserId","CreationDate","Score"])
+# Rename the column ParentId to Id in the answers DataFrame
+dfA.rename(columns={"ParentId": "Id", "Body": "Answer"}, inplace=True)
 
-# renames the column ParentId to Id
-dfA.reanme(columns={"ParentId":"Id","Body":"Answer"},inplace=True)
+# Group the answers by Id and join them with a comma
+dfA_grouped = dfA.groupby('Id')['Answer'].apply(lambda x: ',,,,,'.join(x.dropna().unique())).reset_index()
 
-# merges the answers dataframe with the merged dataframe
-dfm=dfm.merge(dfA,on='Id',how="left")
+# Merge the answers DataFrame with the merged tags and questions DataFrame
+dfm = dfm.merge(dfA_grouped, on='Id', how='left')
 
-# groups the answers by Id and joins them with a comma
-dfm['Answer'] = dfm.groupby('Id')['Answer'].transform(
-    lambda x: ','.join(str(body) for body in x.dropna().unique())
-)
+# Drop any duplicate rows based on the 'Id' column
+dfm = dfm.drop_duplicates(subset='Id', keep='first')
 
-# drops the duplicates
-dfm=dfm.drop_duplicates(subset='Id', keep='first',)
 
-print(dfm.head())
-print(dfm.columns)
+# Save the merged DataFrame to a CSV file
+dfm.to_csv("./server/jsondataset/Mergeddata.csv", index=False)
 
-# saves the merged dataframe to a csv file
-dfm.to_csv("./server/jsondataset/merged.csv",index=False)
