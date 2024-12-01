@@ -1,6 +1,5 @@
 import pandas as pd
 import re
-import uuid
 import sys
 import os
 
