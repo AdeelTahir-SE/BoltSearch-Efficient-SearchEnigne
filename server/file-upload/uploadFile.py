@@ -36,7 +36,6 @@ def convert_json_to_csv(json_file_path):
     except Exception as e:
         print(f"Error during conversion: {e}")
 
-# Get the file path from the command line arguments
 if len(sys.argv) != 2:
     print(sys.argv[0])
 else:
