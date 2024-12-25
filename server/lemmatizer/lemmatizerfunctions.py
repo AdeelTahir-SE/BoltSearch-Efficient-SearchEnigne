@@ -4,10 +4,10 @@ from nltk.stem import WordNetLemmatizer
 from nltk import pos_tag, word_tokenize
 import os
 
-# Download necessary NLTK resources
-nltk.download('punkt')
-nltk.download('averaged_perceptron_tagger')
-nltk.download('wordnet')
+# # Download necessary NLTK resources
+# nltk.download('punkt')
+# nltk.download('averaged_perceptron_tagger')
+# nltk.download('wordnet')
 
 # Initialize the lemmatizer
 lemmatizer = WordNetLemmatizer()

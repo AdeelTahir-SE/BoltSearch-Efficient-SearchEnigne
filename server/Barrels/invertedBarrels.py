@@ -1,6 +1,10 @@
 import os
 import csv
 from collections import defaultdict
+import sys
+
+# Set the field size limit to a large but valid value (2^31 - 1, maximum for 32-bit)
+csv.field_size_limit(2**31 - 1)
 
 def create_barrels_with_range(inverted_index_file, barrel_dir, num_barrels=500):
     if not os.path.exists(inverted_index_file):
@@ -25,7 +29,7 @@ def create_barrels_with_range(inverted_index_file, barrel_dir, num_barrels=500):
                 token = base_token + '#' + hash_part  # Keep the full token for the barrel
             inverted_index[token].update(doc_ids)
 
-    # Sort tokens by Token_ID (numerically if possible)
+    # Sort tokens by the numeric Token_ID (only the part before '#')
     sorted_tokens = sorted(inverted_index.keys(), key=lambda x: int(x.split('#')[0]))
 
     # If there are fewer tokens than barrels, adjust the number of barrels to the number of tokens
@@ -37,11 +41,7 @@ def create_barrels_with_range(inverted_index_file, barrel_dir, num_barrels=500):
     remainder = total_tokens % num_barrels  # Handle any remaining tokens
 
     # Iterate over the tokens to assign them to barrels
-    current_barrel = defaultdict(list)
-    barrel_start = None
-    barrel_end = None
     token_index = 0
-
     for barrel_num in range(num_barrels):
         # Calculate the range of tokens for the current barrel
         if barrel_num < remainder:
@@ -52,9 +52,9 @@ def create_barrels_with_range(inverted_index_file, barrel_dir, num_barrels=500):
         barrel_tokens = sorted_tokens[token_index:token_index + barrel_size]
         token_index += barrel_size
 
-        # Set barrel start and end tokens
-        barrel_start = barrel_tokens[0]
-        barrel_end = barrel_tokens[-1]
+        # Set barrel start and end based on Token_IDs
+        barrel_start = int(barrel_tokens[0].split('#')[0])  # Token_ID before '#'
+        barrel_end = int(barrel_tokens[-1].split('#')[0])  # Token_ID before '#'
 
         # Fill the current barrel with the document IDs of these tokens
         current_barrel = {token: inverted_index[token] for token in barrel_tokens}
@@ -76,7 +76,7 @@ def create_barrels_with_range(inverted_index_file, barrel_dir, num_barrels=500):
 
 # Example usage
 create_barrels_with_range(
-    inverted_index_file="./dataset/invertedindexsample.csv",  # New inverted index file
+    inverted_index_file="./dataset/inverted_indexa.csv",  # New inverted index file
     barrel_dir="./dataset/barrels",  # Path to your barrel directory
-    num_barrels=5  # Default is 500 barrels, but it will be adjusted if tokens are fewer than 500
+    num_barrels=500  # Default is 500 barrels, but it will be adjusted if tokens are fewer than 500
 )
