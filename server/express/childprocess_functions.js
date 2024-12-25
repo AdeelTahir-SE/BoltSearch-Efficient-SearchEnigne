@@ -1,8 +1,14 @@
-import child_process from 'child_process';
 import {spawn} from "child_process"
+import { fileURLToPath } from 'url';
+import { dirname, resolve } from 'path';
+
 export async function uploadDocument(filePath) {
-    const scriptPath="../file-upload/uploadFile.py"
-    const pythonProcess = spawn("python", [scriptPath, ...args]);
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = dirname(__filename);
+  
+  // Resolve the absolute path of the Python script
+  const scriptPath = resolve(__dirname, '../../server/file-upload/uploadFile.py'); // Adjust path as needed
+  const pythonProcess = spawn("python", [scriptPath,filePath]);
 
     pythonProcess.stdout.on("data", (data) => {
       console.log(`Output: ${data.toString()}`);

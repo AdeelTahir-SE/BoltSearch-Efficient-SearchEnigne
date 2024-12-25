@@ -4,19 +4,21 @@ import { uploadDocument, searchDocuments } from "./childprocess_functions.js";
 import path from "path";
 import multer from "multer"
 
+const uploadPath = path.resolve('../file-upload/uploads');
+
 const upload = multer({
   storage: multer.diskStorage({
     destination: (req, file, cb) => {
-      const uploadPath = path.resolve(__dirname, "../file-upload/uploads");
-      fse.ensureDirSync(uploadPath); 
-      cb(null, uploadPath);
+      // Use the absolute path directly
+      fse.ensureDirSync(uploadPath); // Ensure the upload directory exists
+      cb(null, uploadPath); // Specify the destination folder
     },
     filename: (req, file, cb) => {
-      cb(null, file.originalname); // Use the original file name
+      // Use the original file name
+      cb(null, file.originalname);
     },
   }),
 });
-
 const router = Router();
 
 router.get("/documents", async (req, res) => {
