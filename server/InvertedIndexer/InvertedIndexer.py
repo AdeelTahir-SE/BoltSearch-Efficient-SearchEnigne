@@ -86,4 +86,4 @@ def update_inverted_index(inverted_index_file, mdsample_file, lt_file):
     # Call the function to remove duplicates and save the cleaned data
     remove_duplicates_and_save(inverted_index_file)
 
-update_inverted_index("./dataset/InvertedIndex.csv", "./dataset/MergedData_with_tokens.csv", "./dataset/LemmatizedTags&Tokens.csv")
+update_inverted_index("./dataset/InvertedIndexsample.csv", "./dataset/mdtokenssample.csv", "./dataset/lt1.csv")

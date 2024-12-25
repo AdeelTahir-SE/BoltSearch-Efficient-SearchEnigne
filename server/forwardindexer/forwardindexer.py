@@ -114,4 +114,4 @@ def process_data(input_file_path, output_file_path):
     remove_duplicates_and_save(output_file_path)
 
 
-process_data("./dataset/mergeddatasample.csv", "./dataset/MergedData_with_tokens.csv")
+process_data("./dataset/mdsample.csv", "./dataset/mdtokenssample.csv")

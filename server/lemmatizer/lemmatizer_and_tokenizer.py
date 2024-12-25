@@ -69,6 +69,6 @@ def lemmatize_and_save(input_file_path, lemmatized_file_path):
 
 # Example usage
 lemmatize_and_save(
-    input_file_path="./dataset/mergeddatasample.csv",
-    lemmatized_file_path="./dataset/LemmatizedTags&Tokens.csv"
+    input_file_path="./dataset/mdsample.csv",
+    lemmatized_file_path="./dataset/lt1.csv"
 )
