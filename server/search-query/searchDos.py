@@ -3,7 +3,7 @@ import os
 import pandas as pd
 from collections import defaultdict
 import json
-
+import Ranking_Docs as rd
 # Add the '../lemmatizer' folder to the Python path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'lemmatizer'))
 
@@ -89,10 +89,11 @@ def searchWord():
                         if not matching_docs.empty:
                             # Clean the data to remove NaN values
                             cleaned_docs = matching_docs.where(pd.notnull(matching_docs), None)
+                            cleaned_docs=rd.filter_documents_by_title(cleaned_docs,lemmatize_word)
                             results.extend(cleaned_docs.to_dict(orient='records'))
                     except Exception as e:
                         pass  # Skip files that couldn't be read
-
+        
         # Return results as JSON
         return json.dumps(results)
 
@@ -106,3 +107,4 @@ if __name__ == "__main__":
         print(results)  # Print results to stdout (this is what your server will capture)
     except Exception as e:
         print(json.dumps({"error": f"An unexpected error occurred: {e}"}))
+#ignore doreamon
