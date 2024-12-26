@@ -4,7 +4,7 @@ import { uploadDocument, searchDocuments } from "./childprocess_functions.js";
 import path from "path";
 import multer from "multer"
 
-const uploadPath = path.resolve('../file-upload/uploads');
+const uploadPath = path.resolve('./file-upload/uploads');
 
 const upload = multer({
   storage: multer.diskStorage({
@@ -46,8 +46,8 @@ router.post("/documents", upload.single("file"), async (req, res) => {
     const uploadedFilePath = req.file.path;
 
     const response = await uploadDocument(uploadedFilePath);
-
-    return res.json({
+    console.log(response)
+    return res.status(200).json({
       message: "File uploaded and processed successfully",
       filePath: uploadedFilePath,
       response,

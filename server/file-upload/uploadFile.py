@@ -1,43 +1,44 @@
+import sys
 import os
 import json
-import csv
-import sys
 
-def convert_json_to_csv(json_file_path):
+functions = os.path.join(os.getcwd(), "file-upload", 'components')  # Construct the path
+print(functions)
+if functions not in sys.path:  # Add the directory to sys.path only if it's not already there
+    sys.path.append(functions)
+
+
+from forward_index import process_and_append_to_barrel 
+from inverted_index import inverted_index 
+def main():
+    if len(sys.argv) != 2:
+        print("Usage: python process_json.py <input_json_file_path>")
+        sys.exit(1)
+    print(sys.argv[1])
+    input_file_path = sys.argv[1]
+    forward_index_barrel_folder = os.path.join(os.getcwd(),"dataset","DocumentBarrels")
+    inverted_index_barrel_folder = os.path.join(os.getcwd(),"dataset","barrels")
+
+    if not os.path.exists(input_file_path):
+        print(f"Error: The file {input_file_path} does not exist.")
+
+    if not os.path.exists(forward_index_barrel_folder):
+        print(f"Error: The forward index barrel folder {forward_index_barrel_folder} does not exist.")
+
+    if not os.path.exists(inverted_index_barrel_folder):
+        print(f"Error: The inverted index barrel folder {inverted_index_barrel_folder} does not exist.")
+
     try:
-        # Check if the file exists
-        if not os.path.exists(json_file_path):
-            print(f"File not found: {json_file_path}")
-            return
+        print(f"Processing file {input_file_path} and appending to forward index barrels in {forward_index_barrel_folder}...")
+        combined_token_ids_list = process_and_append_to_barrel(input_file_path, forward_index_barrel_folder)
+        print("combinedids",combined_token_ids_list)
+        inverted_index(combined_token_ids_list[0], combined_token_ids_list[1], inverted_index_barrel_folder)
 
-        # Open the JSON file and load its content
-        with open(json_file_path, 'r') as f:
-            data = json.load(f)
-
-        # Define the CSV file path
-        csv_file_path = json_file_path.replace('.json', '.csv')
+        print("Processing completed successfully.")
 
 
-
-
-        # Open a CSV file for writing
-        with open(csv_file_path, 'w', newline='') as csvfile:
-            if data:
-                writer = csv.DictWriter(csvfile, fieldnames=data[0].keys())
-                writer.writeheader()
-                writer.writerows(data)
-                print(f"Conversion successful: {json_file_path} -> {csv_file_path}")
-            else:
-                print(f"JSON file is empty: {json_file_path}")
-
-    
-        os.remove(json_file_path)
-        print(f"Deleted original JSON file: {json_file_path}")
     except Exception as e:
-        print(f"Error during conversion: {e}")
+        print(f"An error occurred: {e}")
+        sys.exit(1)
 
-if len(sys.argv) != 2:
-    print(sys.argv[0])
-else:
-    json_file_path = sys.argv[1]
-    convert_json_to_csv(json_file_path)
+main()
