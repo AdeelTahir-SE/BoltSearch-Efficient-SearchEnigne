@@ -8,21 +8,32 @@ export async function uploadDocument(filePath) {
   
   // Resolve the absolute path of the Python script
   const scriptPath = resolve(__dirname, '../../server/file-upload/uploadFile.py'); // Adjust path as needed
-  const pythonProcess = spawn("python", [scriptPath,filePath]);
+  console.log("Running Python script:", scriptPath, " with file:", filePath);
+  
+  // Use a promise to wrap the Python script execution
+  return new Promise((resolve, reject) => {
+    const pythonProcess = spawn("python", [scriptPath, filePath]);
 
     pythonProcess.stdout.on("data", (data) => {
       console.log(`Output: ${data.toString()}`);
     });
-    
+
     pythonProcess.stderr.on("data", (data) => {
       console.error(`Error: ${data.toString()}`);
     });
-    
-    pythonProcess.on("close", (code) => {
-      console.log(`Python script exited with code ${code}`);
-    });
 
+    pythonProcess.on("close", (code) => {
+      if (code === 0) {
+        console.log(`Python script completed successfully with code ${code}`);
+        resolve(code); // Resolve the promise on success
+      } else {
+        console.error(`Python script exited with code ${code}`);
+        reject(`Python script failed with code ${code}`); // Reject the promise on failure
+      }
+    });
+  });
 }
+
         
 
 export function searchDocuments(args) {
@@ -39,7 +50,7 @@ export function searchDocuments(args) {
     pythonProcess.stderr.on("data", (data) => {
       errorOutput += data.toString();
     });
-
+ 
     pythonProcess.on("close", (code) => {
       if (code === 0) {
         try {
