@@ -1,51 +1,60 @@
 import pandas as pd
 import os
 
-def create_inverted_index(input_file_path, output_file_path):
-    # Check if the input file exists
-    if not os.path.exists(input_file_path):
-        print(f"Input file {input_file_path} does not exist.")
-        return
+def create_Inverted_Index(input_file, output_file):
+    try:
+        # Check if the input file exists
+        if not os.path.exists(input_file):
+            raise FileNotFoundError(f"Input file '{input_file}' does not exist.")
 
-    # Read the forward index data
-    data = pd.read_csv(input_file_path)
+        # Read the input file into a DataFrame
+        df = pd.read_csv(input_file)
 
-    # Initialize a dictionary to store the inverted index
-    inverted_index = {}
+        # Check if required columns exist
+        required_columns = ['combined_token_ids', 'Id']
+        missing_columns = [col for col in required_columns if col not in df.columns]
+        if missing_columns:
+            raise ValueError(f"Input file is missing required columns: {', '.join(missing_columns)}")
 
-    # Iterate through each row in the dataset
-    for index, row in data.iterrows():
-        # Extract the combined token IDs
-        token_ids = str(row['combined_token_ids']).split(', ')
-        
-        # Map each token ID to the current row index (or another identifier, e.g., row['Id'])
-        for token_id in token_ids:
-            token_id = token_id.strip()  # Clean the token ID
-            if token_id:  # Skip empty tokens
-                if token_id not in inverted_index:
-                    inverted_index[token_id] = []  # Initialize a list for this token ID
-                inverted_index[token_id].append(index)  # Append the row index to the list
+        # Check if DataFrame is empty
+        if df.empty:
+            raise ValueError("Input file is empty.")
 
-    # Convert the inverted index dictionary into a DataFrame for saving
-    inverted_index_df = pd.DataFrame([
-        {'token_id': token_id, 'row_indices': ', '.join(map(str, rows))}
-        for token_id, rows in inverted_index.items()
-    ])
+        # Create a dictionary to store the inverted index
+        inverted_index = {}
 
-    # Save the inverted index to the output file
-    inverted_index_df.to_csv(output_file_path, index=False)
-    print(f"Inverted index saved to {output_file_path}")
+        # Build the inverted index
+        for _, row in df.iterrows():
+            token_ids = str(row['combined_token_ids']).split()
+            for word in token_ids:
+                # Remove any commas from the token_id (if any)
+                clean_word = word.replace(",", "")
+                # Add the ID to the set for the word
+                inverted_index.setdefault(clean_word, set()).add(row['Id'])
 
-<<<<<<< HEAD
-            # Write the cleaned data back to the output file
-            cleaned_data.to_csv(output_file_path, index=False)
-            print(f"Duplicates removed and cleaned data saved to {output_file_path}")
+        # Prepare data for output
+        output_data = []
+        for word, ids in inverted_index.items():
+            # Convert the set of IDs to a comma-separated string
+            output_data.append({'Token_ID': word, 'Document_IDs': ",".join(map(str, sorted(ids)))})
 
-    # Call the function to remove duplicates and save the cleaned data
-    remove_duplicates_and_save(inverted_index_file)
+        # Write the inverted index to the output CSV file
+        output_df = pd.DataFrame(output_data)
+        output_df.to_csv(output_file, index=False)
 
-update_inverted_index("./dataset/InvertedIndexsample.csv", "./dataset/mdtokenssample.csv", "./dataset/lt1.csv")
-=======
+        print(f"Inverted index created successfully: {output_file}")
+        return output_file
+
+    except FileNotFoundError as fnf_error:
+        print(f"Error: {fnf_error}")
+    except pd.errors.EmptyDataError:
+        print("Error: Input file is empty or only contains headers.")
+    except pd.errors.ParserError:
+        print("Error: Failed to parse input file. Check file formatting.")
+    except ValueError as ve:
+        print(f"Error: {ve}")
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+
 # Example usage
-create_inverted_index("./dataset/MergedData_with_tokens.csv", "./dataset/inverted_index.csv")
->>>>>>> 6153e8da11a08909230b2ef02f6c09adba7656c8
+create_Inverted_Index("./dataset/MergedData_with_tokens.csv", "./dataset/Inverted_Index.csv")

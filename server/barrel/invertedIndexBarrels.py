@@ -67,7 +67,7 @@ def create_barrels_with_range(inverted_index_file, barrel_dir, tokens_per_barrel
 
 # Example usage
 create_barrels_with_range(
-    inverted_index_file="./dataset/inverted_indexa.csv",  # New inverted index file
+    inverted_index_file="./dataset/Inverted_Index.csv",  # New inverted index file
     barrel_dir="./dataset/barrels",  # Path to your barrel directory
     tokens_per_barrel=3000  # Specify 3000 tokens per barrel
 )

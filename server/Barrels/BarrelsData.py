@@ -4,7 +4,7 @@ import csv
 from collections import defaultdict
 
 # Load the DataFrame from the CSV
-brls = pd.read_csv("./Barrels/Mergeddata.csv")
+brls = pd.read_csv("./dataset/MergedData_with_tokens.csv")
 
 # Convert the DataFrame rows to a list of tuples (excluding the index)
 tuple_list = list(brls.itertuples(index=False, name=None))
@@ -31,7 +31,7 @@ for question_id, row in zip(QuestionsID, tuple_list):
     barrels[barrel_number].append(row)
 
 # Create the output directory if it doesn't exist
-output_dir = "./Barrels"
+output_dir = "./dataset/DocumentBarrels"
 os.makedirs(output_dir, exist_ok=True)
 
 # Write each barrel's content to a CSV file

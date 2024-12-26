@@ -23,8 +23,12 @@ const router = Router();
 
 router.get("/documents", async (req, res) => {
   try {
+    console.log("called")
     const args = req.query.args ? req.query.args.split(",") : [];
     const documents = await searchDocuments(args);
+    if(!documents){
+      return res.status(404).json({ error: "No documents found" });
+    } 
     return res.json(documents);
   } catch (error) {
     console.error("Error in GET /documents:", error);

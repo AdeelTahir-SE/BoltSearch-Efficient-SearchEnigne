@@ -24,20 +24,37 @@ export async function uploadDocument(filePath) {
 
 }
         
-export async function searchDocuments(words){
-    const scriptPath="../search-query/searchDocuments.py"
-    const args=words;
-    const pythonProcess = spawn("python", [scriptPath, ...args]);
 
-pythonProcess.stdout.on("data", (data) => {
-  console.log(`Output: ${data.toString()}`);
-});
+export function searchDocuments(args) {
+  return new Promise((resolve, reject) => {
+    const pythonProcess = spawn("python", ["./search-query/searchDos.py", ...args]);
 
-pythonProcess.stderr.on("data", (data) => {
-  console.error(`Error: ${data.toString()}`);
-});
+    let output = "";
+    let errorOutput = "";
 
-pythonProcess.on("close", (code) => {
-  console.log(`Python script exited with code ${code}`);
-});
+    pythonProcess.stdout.on("data", (data) => {
+      output += data.toString();
+    });
+
+    pythonProcess.stderr.on("data", (data) => {
+      errorOutput += data.toString();
+    });
+
+    pythonProcess.on("close", (code) => {
+      if (code === 0) {
+        try {
+          // Parse JSON output from Python script
+          const results = JSON.parse(output.trim());
+          console.log(results)
+          resolve(results);
+        } catch (error) {
+          reject(`Failed to parse Python script output: ${error}`);
+        }
+      } else {
+        reject(`Python script exited with code ${code}: ${errorOutput}`);
+      }
+    });
+  });
 }
+
+
