@@ -4,6 +4,8 @@ import pandas as pd
 from collections import defaultdict
 import json
 import Ranking_Docs as rd
+import testtwo as tt
+
 # Add the '../lemmatizer' folder to the Python path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'lemmatizer'))
 
@@ -12,12 +14,8 @@ from lemmatizerfunctions import lemmatize_word, wordToken
 
 def searchWord():
     try:
-        # Validate command-line arguments
-        if len(sys.argv) != 2:
-            print("Usage: python script.py <word_to_search>")
-            return []
-
         word = sys.argv[1]
+        limit = int(sys.argv[2]) if len(sys.argv) > 2 else 30  # Default to 30 if no limit is provided
 
         # Step 1: Lemmatize and tokenize the word
         lemmatized_word = lemmatize_word(word)
@@ -47,6 +45,7 @@ def searchWord():
                     pass  # Skip invalid files
 
         document_ids = []
+
         for file in found_token_files:
             file_path = os.path.join(token_barrel_folder, file)
 
@@ -66,7 +65,7 @@ def searchWord():
                     if f"{token}#" in token_dict:
                         document_ids.extend(token_dict[f"{token}#"].split(','))
                 except Exception as e:
-                    pass  # Skip files that couldn't be read
+                    print(f"Error reading file {file_path}: {e}")  # Log the specific error for file reading
 
         # Step 4: Search for documents in corresponding document barrels
         document_barrel_folder = './dataset/DocumentBarrels'
@@ -74,6 +73,9 @@ def searchWord():
             return json.dumps({"error": f"Document barrel folder '{document_barrel_folder}' does not exist."})
 
         results = []
+        document_ids = list(set(document_ids))  # Remove duplicates
+        document_ids = document_ids[:limit]  # Apply the limit
+
         if document_ids:
             for doc_id in document_ids:
                 barrel_file = f"barrel_{(int(doc_id) // 4000) * 4000}_to_{(int(doc_id) // 4000) * 4000 + 3999}.csv"
@@ -81,7 +83,7 @@ def searchWord():
 
                 if os.path.isfile(file_path) and os.path.getsize(file_path) > 0:
                     try:
-                        # Read the document barrel file without specifying encoding
+                        # Read the document barrel file
                         df = pd.read_csv(file_path)
 
                         # Filter for the document ID
@@ -89,16 +91,21 @@ def searchWord():
                         if not matching_docs.empty:
                             # Clean the data to remove NaN values
                             cleaned_docs = matching_docs.where(pd.notnull(matching_docs), None)
-                            cleaned_docs=rd.filter_documents_by_title(cleaned_docs,lemmatize_word)
-                            results.extend(cleaned_docs.to_dict(orient='records'))
+                            ranked_docs = tt.final_Documents(cleaned_docs)
+                            results.extend(ranked_docs)  # Add results (list of dicts)
+
                     except Exception as e:
-                        pass  # Skip files that couldn't be read
-        
-        # Return results as JSON
-        return json.dumps(results)
+                        print(f"Error reading document barrel file {file_path}: {e}")  # Log the error for document barrel files
+
+        if results:
+            return json.dumps(results)  # Return the results as JSON
+        else:
+            return json.dumps({"error": "No results found."})
 
     except Exception as e:
-        return json.dumps({"error": str(e)})
+        print(f"Unexpected error: {e}")
+        return json.dumps({"error": f"An unexpected error occurred: {e}"})
+
 
 # Entry point
 if __name__ == "__main__":
@@ -107,4 +114,3 @@ if __name__ == "__main__":
         print(results)  # Print results to stdout (this is what your server will capture)
     except Exception as e:
         print(json.dumps({"error": f"An unexpected error occurred: {e}"}))
-#ignore doreamon

@@ -67,15 +67,15 @@ def rank_documents(documents, keyword, title_weight=0.5, score_weight=0.3, date_
     ranked_documents = sorted(documents, key=calculate_score, reverse=True)
     return ranked_documents
 
-# Example usage:
-documents = [
-    Document('AI in Healthcare', 85, datetime(2023, 12, 1)),
-    Document('Deep Learning Applications', 90, datetime(2024, 1, 15)),
-    Document('AI Trends 2024', 78, datetime(2024, 10, 5)),
-    Document('Introduction to AI', 92, datetime(2022, 6, 10))
-]
+# # Example usage:
+# documents = [
+#     Document('AI in Healthcare', 85, datetime(2023, 12, 1)),
+#     Document('Deep Learning Applications', 90, datetime(2024, 1, 15)),
+#     Document('AI Trends 2024', 78, datetime(2024, 10, 5)),
+#     Document('Introduction to AI', 92, datetime(2022, 6, 10))
+# ]
 
-keyword = 'AI'
-ranked_docs = rank_documents(documents, keyword)
-for doc in ranked_docs:
-    print(doc)
+# keyword = 'AI'
+# ranked_docs = rank_documents(documents, keyword)
+# for doc in ranked_docs:
+#     print(doc)

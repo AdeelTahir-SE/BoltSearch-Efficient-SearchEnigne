@@ -1,6 +1,7 @@
 import {spawn} from "child_process"
 import { fileURLToPath } from 'url';
 import { dirname, resolve } from 'path';
+import fse from "fs-extra"
 
 export async function uploadDocument(filePath) {
   const __filename = fileURLToPath(import.meta.url);
@@ -34,12 +35,72 @@ export async function uploadDocument(filePath) {
   });
 }
 
-        
 
-export function searchDocuments(args) {
+export function searchDocuments(args, limit) {
   return new Promise((resolve, reject) => {
-    const pythonProcess = spawn("python", ["./search-query/searchDos.py", ...args]);
+    const words = args.split(" ");
 
+    // Run the Python script for each word in parallel
+    const promises = words.map((word) => runPythonScript(word, limit));
+
+    // Wait for all promises to resolve or reject
+    Promise.all(promises)
+      .then(async(results) => {
+        // After getting results, slice the first `limit` documents
+        const docs = results.slice(0, limit);
+        const sortedResults = mergeAndPrioritizeResults(docs, limit); // Pass limit to merge function
+        await fse.writeJSON('./results.json', sortedResults, { spaces: 2 });
+
+        resolve(sortedResults);
+      })
+      .catch((error) => {
+        reject(`Error executing Python script: ${error}`);
+      });
+  });
+}
+
+function mergeAndPrioritizeResults(resultsArray, limit) {
+  const mergedResults = {};
+
+  // Aggregate results and count occurrences
+  resultsArray.forEach((results) => {
+    results.forEach((doc) => {
+      const docId = doc.Id;
+      if (!mergedResults[docId]) {
+        mergedResults[docId] = { ...doc, occurrence: 1 };
+      } else {
+        mergedResults[docId].occurrence += 1;
+        mergedResults[docId].Score += doc.Score; // Adjust if needed
+      }
+    });
+  });
+
+  // Convert to array and sort
+  const sortedResults = Object.values(mergedResults).sort((a, b) => {
+    // Primary: Sort by occurrences
+    if (b.occurrence !== a.occurrence) {
+      return b.occurrence - a.occurrence;
+    }
+
+    // Secondary: Sort by Score
+    if (b.Score !== a.Score) {
+      return b.Score - a.Score;
+    }
+    if(b.CreationDate !== a.CreationDate){
+    const dateA = new Date(a.CreationDate);
+    const dateB = new Date(b.CreationDate);
+    return dateB - dateA;
+    }
+  });
+
+  return sortedResults.slice(0, limit);
+}
+
+
+function runPythonScript(word,limit) {
+  return new Promise((resolve, reject) => {
+    const pythonProcess = spawn("python", ["./search-query/searchDos.py", word,limit]);
+    
     let output = "";
     let errorOutput = "";
 
@@ -50,22 +111,19 @@ export function searchDocuments(args) {
     pythonProcess.stderr.on("data", (data) => {
       errorOutput += data.toString();
     });
- 
+
     pythonProcess.on("close", (code) => {
       if (code === 0) {
         try {
-          // Parse JSON output from Python script
+          // Parse JSON output
           const results = JSON.parse(output.trim());
-          console.log(results)
           resolve(results);
         } catch (error) {
-          reject(`Failed to parse Python script output: ${error}`);
+          reject(`Failed to parse Python script output for word "${word}": ${error}`);
         }
       } else {
-        reject(`Python script exited with code ${code}: ${errorOutput}`);
+        reject(`Python script exited with code ${code} for word "${word}": ${errorOutput}`);
       }
     });
   });
 }
-
-

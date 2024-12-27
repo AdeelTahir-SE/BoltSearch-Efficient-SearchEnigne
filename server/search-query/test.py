@@ -17,16 +17,30 @@ def lemmatize_word(word):
 def calculate_recency_weight(creation_date):
     """
     Assign a weight to documents based on how recent their CreationDate is.
-    :param creation_date: String date in the format 'YYYY-MM-DD'.
+    :param creation_date: String date in ISO 8601 format ('YYYY-MM-DDTHH:mm:ssZ') or 'YYYY-MM-DD'.
     :return: A weight (higher for newer dates).
     """
     try:
-        today = datetime.today()
-        creation_date = datetime.strptime(creation_date, '%Y-%m-%d')
+        # Handle both ISO 8601 and 'YYYY-MM-DD' formats
+        if 'T' in creation_date and 'Z' in creation_date:
+            creation_date = datetime.strptime(creation_date, '%Y-%m-%dT%H:%M:%SZ')
+        else:
+            creation_date = datetime.strptime(creation_date, '%Y-%m-%d')
+
+        today = datetime.utcnow()  # Use UTC for consistency
+        print(f"Current date: {today}")  # Debugging line
+
+        # Calculate the difference between the current date and the creation date
         days_diff = (today - creation_date).days
-        return 1 / (1 + days_diff)  # Newer dates get higher weight
-    except Exception:
+        print(f"Days difference: {days_diff}")  # Debugging line
+
+        # Return a weight based on the difference (newer dates get higher weight)
+        return 1 / (1 + days_diff) if days_diff >= 0 else 0  # Ensure non-negative weights
+
+    except Exception as e:
+        print(f"Error parsing date: {e}")
         return 0  # Return 0 weight for invalid dates
+
 
 def rank_documents_by_words(documents, words, title_weight=2, score_weight=1, date_weight=1):
     """
@@ -94,36 +108,36 @@ def rank_documents_by_words(documents, words, title_weight=2, score_weight=1, da
     
     return result_tuples
 
-# Example Usage:
-if __name__ == "__main__":
+# # Example Usage:
+# if __name__ == "__main__":
 
-    # Example DataFrame
-    data = {
-        'Id': [1, 2, 3, 4],
-        'CreationDate': ['2024-01-01', '2023-12-25', '2024-01-05', '2023-12-30'],
-        'Score': [100, 85, 90, 98],
-        'Title': [
-            "Introduction to AI and Machine Learning", 
-            "Deep Learning Applications in AI", 
-            "AI Trends 2024", 
-            "Healthcare and AI"
-        ],
-        'Body': [
-            "Detailed content about AI and ML.",
-            "Focus on deep learning and its applications.",
-            "Trends in AI for the year 2024.",
-            "Use of AI in the healthcare industry."
-        ],
-        'Tag': ["AI, ML", "Deep Learning, AI", "AI, Trends", "AI, Healthcare"],
-        'Answer': ["Answer1", "Answer2", "Answer3", "Answer4"],
-        'combined_token_ids': ["1,2,3", "4,5,6", "7,8,9", "10,11,12"]
-    }
-    documents = pd.DataFrame(data)
+#     # Example DataFrame
+#     data = {
+#         'Id': [1, 2, 3, 4],
+#         'CreationDate': ['2024-01-01', '2023-12-25', '2024-01-05', '2023-12-30'],
+#         'Score': [100, 85, 90, 98],
+#         'Title': [
+#             "Introduction to AI and Machine Learning", 
+#             "Deep Learning Applications in AI", 
+#             "AI Trends 2024", 
+#             "Healthcare and AI"
+#         ],
+#         'Body': [
+#             "Detailed content about AI and ML.",
+#             "Focus on deep learning and its applications.",
+#             "Trends in AI for the year 2024.",
+#             "Use of AI in the healthcare industry."
+#         ],
+#         'Tag': ["AI, ML", "Deep Learning, AI", "AI, Trends", "AI, Healthcare"],
+#         'Answer': ["Answer1", "Answer2", "Answer3", "Answer4"],
+#         'combined_token_ids': ["1,2,3", "4,5,6", "7,8,9", "10,11,12"]
+#     }
+#     documents = pd.DataFrame(data)
 
-    # Example words to check
-    words_to_check = ["Healthcare"]
+#     # Example words to check
+#     words_to_check = ["Healthcare"]
     
-    # Rank documents
-    ranked_docs = rank_documents_by_words(documents, words_to_check, title_weight=2, score_weight=1, date_weight=1)
-    for doc in ranked_docs:
-        print(doc)
+#     # Rank documents
+#     ranked_docs = rank_documents_by_words(documents, words_to_check, title_weight=2, score_weight=1, date_weight=1)
+#     for doc in ranked_docs:
+#         print(doc)
