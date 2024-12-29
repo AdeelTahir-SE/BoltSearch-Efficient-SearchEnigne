@@ -10,16 +10,16 @@ if lemmatizer_dir not in sys.path:  # Add the directory to sys.path only if it's
     sys.path.append(lemmatizer_dir)
 
 # Now import the lemmatizer functions
-from lemmatizerfunctions import lemmatize_word, wordToken
+from lemmatizerfunctions import lemmatize_word
 
 # Function to check if a document with the given ID already exists in the specific barrel file
 def is_document_exists_in_barrel(barrel_file_path, doc_id):
     """Check if the document ID already exists in the specific barrel file."""
     if os.path.exists(barrel_file_path):
         try:
-            # Read the existing barrel file to check for duplicate ID
             barrel_data = pd.read_csv(barrel_file_path)
-            if doc_id in barrel_data['Id'].values:
+            existing_ids = set(barrel_data['Id'].values)  # Convert to set for faster lookup
+            if doc_id in existing_ids:
                 return True  # Document ID exists in this barrel file
         except Exception as e:
             print(f"Error reading {barrel_file_path}: {e}")
@@ -35,8 +35,9 @@ def process_and_append_to_barrel(input_file_path, barrel_folder):
     def process_text(text):
         if not isinstance(text, str):  # Handle NaN or None values
             return []
-        tokens = re.split(r'[ ,]', text)
-        return [lemmatize_word(token.strip()) for token in tokens if token.strip()]
+        # Use a more comprehensive regular expression for tokenizing words
+        tokens = re.findall(r'\b\w+\b', text.lower())  # Tokenize by word boundaries
+        return [lemmatize_word(token) for token in tokens]
 
     # Function to generate a token ID by summing ASCII values of the characters in the word
     def wordToken(text):
@@ -75,10 +76,10 @@ def process_and_append_to_barrel(input_file_path, barrel_folder):
     # Initialize a list to store processed data and token IDs
     processed_data = []
     combined_token_ids_list = []
-
+    
     # Process each document in the JSON data
     for doc in data:
-        doc_id = doc.get('Id')
+        doc_id = doc.get('id')
 
         # Determine the barrel name and path based on document ID
         barrel_name = f"barrel_{(doc_id // 4000) * 4000}_to_{(doc_id // 4000) * 4000 + 3999}.csv"
@@ -127,4 +128,42 @@ def process_and_append_to_barrel(input_file_path, barrel_folder):
     print(combined_token_ids_list)
     return [combined_token_ids_list, doc_id]
 
+# Main function to execute the process
+def main():
+    if len(sys.argv) != 2:
+        print("Usage: python process_json.py <input_json_file_path>")
+        sys.exit(1)
+    
+    input_file_path = sys.argv[1]
+    forward_index_barrel_folder = os.path.join(os.getcwd(), "dataset", "DocumentBarrels")
+    inverted_index_barrel_folder = os.path.join(os.getcwd(), "dataset", "barrels")
+
+    if not os.path.exists(input_file_path):
+        print(f"Error: The file {input_file_path} does not exist.")
+        sys.exit(1)
+
+    if not os.path.exists(forward_index_barrel_folder):
+        print(f"Error: The forward index barrel folder {forward_index_barrel_folder} does not exist.")
+        sys.exit(1)
+
+    if not os.path.exists(inverted_index_barrel_folder):
+        print(f"Error: The inverted index barrel folder {inverted_index_barrel_folder} does not exist.")
+        sys.exit(1)
+
+    try:
+        print(f"Processing file {input_file_path} and appending to forward index barrels in {forward_index_barrel_folder}...")
+        combined_token_ids_list = process_and_append_to_barrel(input_file_path, forward_index_barrel_folder)
+        print("Received combined_token_ids_list:", combined_token_ids_list)
+        
+        if combined_token_ids_list and len(combined_token_ids_list) == 2:
+            # Assuming you have an inverted_index function to handle the second part of processing
+            inverted_index(combined_token_ids_list[0], combined_token_ids_list[1], inverted_index_barrel_folder)
+        else:
+            print(f"Error: Invalid token list returned: {combined_token_ids_list}")
+            sys.exit(1)
+
+        print("Processing completed successfully.")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        sys.exit(1)
 

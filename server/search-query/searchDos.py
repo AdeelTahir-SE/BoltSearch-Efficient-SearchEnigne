@@ -3,8 +3,7 @@ import os
 import pandas as pd
 from collections import defaultdict
 import json
-import Ranking_Docs as rd
-import testtwo as tt
+import documents_parser as dp
 
 # Add the '../lemmatizer' folder to the Python path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'lemmatizer'))
@@ -45,27 +44,35 @@ def searchWord():
                     pass  # Skip invalid files
 
         document_ids = []
+        opened_files = {}  # Cache to store opened files and their data
 
         for file in found_token_files:
             file_path = os.path.join(token_barrel_folder, file)
 
             if os.path.isfile(file_path) and os.path.getsize(file_path) > 0:
-                try:
-                    # Read the CSV file without specifying encoding
-                    df = pd.read_csv(file_path)
+                # Check if the file has already been opened and cached
+                if file_path not in opened_files:
+                    try:
+                        # Read the CSV file and store its data in the cache
+                        df = pd.read_csv(file_path)
 
-                    # Create a dictionary for token lookups
-                    token_dict = defaultdict(str)
-                    for _, row in df.iterrows():
-                        token_dict[str(row['Token_ID'])] = row['Document_IDs']
+                        # Create a dictionary for token lookups
+                        token_dict = defaultdict(str)
+                        for _, row in df.iterrows():
+                            token_dict[str(row['Token_ID'])] = row['Document_IDs']
 
-                    # Search for token and token#
-                    if token in token_dict:
-                        document_ids.extend(token_dict[token].split(','))
-                    if f"{token}#" in token_dict:
-                        document_ids.extend(token_dict[f"{token}#"].split(','))
-                except Exception as e:
-                    print(f"Error reading file {file_path}: {e}")  # Log the specific error for file reading
+                        # Cache the token_dict for future use
+                        opened_files[file_path] = token_dict
+                    except Exception as e:
+                        print(f"Error reading file {file_path}: {e}")  # Log the specific error for file reading
+                        continue
+
+                # Use the cached token_dict to search for tokens
+                token_dict = opened_files[file_path]
+                if token in token_dict:
+                    document_ids.extend(token_dict[token].split(','))
+                if f"{token}#" in token_dict:
+                    document_ids.extend(token_dict[f"{token}#"].split(','))
 
         # Step 4: Search for documents in corresponding document barrels
         document_barrel_folder = './dataset/DocumentBarrels'
@@ -91,7 +98,7 @@ def searchWord():
                         if not matching_docs.empty:
                             # Clean the data to remove NaN values
                             cleaned_docs = matching_docs.where(pd.notnull(matching_docs), None)
-                            ranked_docs = tt.final_Documents(cleaned_docs)
+                            ranked_docs = dp.final_Documents(cleaned_docs)
                             results.extend(ranked_docs)  # Add results (list of dicts)
 
                     except Exception as e:

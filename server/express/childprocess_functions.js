@@ -1,7 +1,6 @@
 import {spawn} from "child_process"
 import { fileURLToPath } from 'url';
 import { dirname, resolve } from 'path';
-import fse from "fs-extra"
 
 export async function uploadDocument(filePath) {
   const __filename = fileURLToPath(import.meta.url);
@@ -9,7 +8,6 @@ export async function uploadDocument(filePath) {
   
   // Resolve the absolute path of the Python script
   const scriptPath = resolve(__dirname, '../../server/file-upload/uploadFile.py'); // Adjust path as needed
-  console.log("Running Python script:", scriptPath, " with file:", filePath);
   
   // Use a promise to wrap the Python script execution
   return new Promise((resolve, reject) => {
@@ -20,7 +18,7 @@ export async function uploadDocument(filePath) {
     });
 
     pythonProcess.stderr.on("data", (data) => {
-      console.error(`Error: ${data.toString()}`);
+      console.log(`Error: ${data.toString()}`);
     });
 
     pythonProcess.on("close", (code) => {
@@ -46,11 +44,10 @@ export function searchDocuments(args, limit) {
     // Wait for all promises to resolve or reject
     Promise.all(promises)
       .then(async(results) => {
+
         // After getting results, slice the first `limit` documents
         const docs = results.slice(0, limit);
         const sortedResults = mergeAndPrioritizeResults(docs, limit); // Pass limit to merge function
-        await fse.writeJSON('./results.json', sortedResults, { spaces: 2 });
-
         resolve(sortedResults);
       })
       .catch((error) => {
@@ -87,9 +84,7 @@ function mergeAndPrioritizeResults(resultsArray, limit) {
       return b.Score - a.Score;
     }
     if(b.CreationDate !== a.CreationDate){
-    const dateA = new Date(a.CreationDate);
-    const dateB = new Date(b.CreationDate);
-    return dateB - dateA;
+    return b.CreationDate - a.CreationDate;
     }
   });
 

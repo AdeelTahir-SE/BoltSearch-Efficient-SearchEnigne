@@ -10,7 +10,8 @@ export default function App() {
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedDocumentIndex, setSelectedDocumentIndex] = useState(null);
-  const [documentLimit, setDocumentLimit] = useState(5); // State to hold the limit
+  const [documentLimit, setDocumentLimit] = useState(5); 
+  const [fileUploading, setFileUploading] = useState(false);
 
   const handleSearchChange = (event) => {
     setSearchQuery(event.target.value);
@@ -33,6 +34,7 @@ export default function App() {
 
     const formData = new FormData();
     formData.append('file', jsonFile);
+    setFileUploading(true); // Set file uploading to true when upload starts
 
     try {
       const response = await fetch('http://localhost:3000/api/documents', {
@@ -49,7 +51,9 @@ export default function App() {
       setJsonFile(null);
     } catch (error) {
       console.error('Error uploading file:', error);
-      alert('Failed to upload file.');
+      alert('File upload failed.');
+    } finally {
+      setFileUploading(false); // Set file uploading to false when upload completes
     }
   };
 
@@ -57,7 +61,6 @@ export default function App() {
     const file = acceptedFiles[0];
     if (file && file.type === 'application/json') {
       setJsonFile(file);
-      console.log('File selected:', file);
     } else {
       alert('Please upload a valid JSON file.');
     }
@@ -75,19 +78,17 @@ export default function App() {
     }
 
     try {
-      // Add the limit parameter to the API request
       const response = await fetch(`http://localhost:3000/api/documents?args=${encodeURIComponent(searchQuery)}&limit=${documentLimit}`);
       if (!response.ok) {
         throw new Error('Failed to fetch documents.');
       }
 
       const result = await response.json();
-      console.log(result); // Log to check the structure of the result
       if (Array.isArray(result) && result.length > 0) {
         setDocuments(result);
       } else {
         alert('No results found.');
-        setDocuments([]); // Clear the documents if no results
+        setDocuments([]);
       }
     } catch (error) {
       console.error('Error fetching search results:', error);
@@ -101,18 +102,17 @@ export default function App() {
     setSelectedDocumentIndex(selectedDocumentIndex === index ? null : index);
   };
 
-  // Function to split the Answer by `,,,,,`
   const splitAnswer = (answer) => {
-    if (!answer) return ''; // Return an empty string if no answer
+    if (!answer) return '';
     return answer
-      .split(',,,,,') // Split the answer by `,,,,,`
-      .map(item => item.trim()) // Trim each item and return as a string
-      .join('<br/><br/><br/><br/><br/>'); // Join the items with <br/> for line breaks
+      .split(',,,,,')
+      .map(item => item.trim())
+      .join('<br/><br/><br/><hr/><br/><br/>');
   };
 
   const renderAnswerAsHTML = (answer) => {
-    if (!answer) return <p>No answer available</p>; // Handle no answer scenario
-    return <div dangerouslySetInnerHTML={{ __html: answer }} />; // Render the HTML string
+    if (!answer) return <p>No answer available</p>;
+    return <div dangerouslySetInnerHTML={{ __html: answer }} />;
   };
 
   return (
@@ -125,40 +125,41 @@ export default function App() {
             </h1>
             <FaBolt className="w-16 h-16 hover:text-yellow-500 transition-colors duration-200" />
           </header>
-          
-          <form onSubmit={handleSearchSubmit} className="mb-4 w-full max-w-md">
-            <div className="flex items-center border-b-2 border-white py-2">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={handleSearchChange}
-                placeholder="Enter search query"
-                className="appearance-none bg-transparent border-none w-full text-white mr-3 py-1 px-2 leading-tight focus:outline-none"
-              />
-              <button
-                type="submit"
-                className="flex-shrink-0 bg-blue-500 hover:bg-blue-700 border-blue-500 hover:border-blue-700 text-sm border-4 text-white py-1 px-2 rounded"
-              >
-                <FaSearch />
-              </button>
-            </div>
-          </form>
+          <section className="flex justify-center items-center gap-3">
+            <form onSubmit={handleSearchSubmit} className="mb-4 w-full max-w-md">
+              <div className="flex items-center border-b-2 border-white py-2">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={handleSearchChange}
+                  placeholder="Enter search query"
+                  className="appearance-none bg-transparent border-none w-full text-white mr-3 py-1 px-2 leading-tight focus:outline-none"
+                />
+                <button
+                  type="submit"
+                  className="flex-shrink-0 bg-blue-500 hover:bg-blue-700 border-blue-500 hover:border-blue-700 text-sm border-4 text-white py-1 px-2 rounded"
+                >
+                  <FaSearch />
+                </button>
+              </div>
+            </form>
 
-          <div className="mb-4">
-            <label htmlFor="limit" className="text-white mr-2">Limit Results:</label>
-            <select
-              id="limit"
-              value={documentLimit}
-              onChange={(e) => setDocumentLimit(parseInt(e.target.value))}
-              className="bg-transparent text-white border-b-2  py-1 px-2"
-            >
-              <option className='text-black' value={5}>5</option>
-              <option className='text-black'value={10}>10</option>
-              <option className='text-black'value={20}>20</option>
-              <option className='text-black'value={50}>50</option>
-              <option className='text-black'value={100}>100</option>
-            </select>
-          </div>
+            <div className="mb-4">
+              <label htmlFor="limit" className="text-white mr-2">Limit Results:</label>
+              <select
+                id="limit"
+                value={documentLimit}
+                onChange={(e) => setDocumentLimit(parseInt(e.target.value))}
+                className="bg-transparent text-white border-b-2 py-1 px-2"
+              >
+                <option className='text-black' value={5}>5</option>
+                <option className='text-black' value={10}>10</option>
+                <option className='text-black' value={20}>20</option>
+                <option className='text-black' value={50}>50</option>
+                <option className='text-black' value={100}>100</option>
+              </select>
+            </div>
+          </section>
 
           {loading && (
             <div className="text-center">
@@ -177,7 +178,7 @@ export default function App() {
                       className="font-bold text-blue-500 underline cursor-pointer mt-2"
                       onClick={() => toggleDocumentContent(index)}
                     >
-                      {index+1}- {document.Title || 'No Title Available'}
+                      {index + 1}- {document.Title || 'No Title Available'}
                     </h3>
                     {selectedDocumentIndex === index && (
                       <>
@@ -234,6 +235,13 @@ export default function App() {
             )}
           </div>
         </div>
+
+        {fileUploading && (
+          <div className="text-center">
+            <div className="w-16 h-16 border-4 border-dashed rounded-full animate-spin border-blue-500 mx-auto"></div>
+            <h2 className="text-white mt-4">Uploading...</h2>
+          </div>
+        )}
 
         <footer className="w-full text-white p-4 text-center mt-8">
           <p>&copy; 2024 Bolt Search. All rights reserved.</p>

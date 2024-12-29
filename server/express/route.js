@@ -26,7 +26,7 @@ router.get("/documents", async (req, res) => {
     console.log("called")
     const args = req.query.args 
     const limit=req.query.limit
-    const documents = await searchDocuments(args,limit);
+    const documents = await searchDocuments(args.trim(),limit);
     if(!documents){
       return res.status(404).json({ error: "No documents found" });
     } 

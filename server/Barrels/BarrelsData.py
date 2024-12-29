@@ -16,7 +16,7 @@ QuestionsID = brls["Id"].tolist()
 QuestionsID.sort()
 
 # Set the barrel size and total number of records
-barrel_size = 4000
+barrel_size = 1000
 total_records = len(QuestionsID)
 
 # Create a dictionary to store rows for each barrel range
@@ -31,7 +31,7 @@ for question_id, row in zip(QuestionsID, tuple_list):
     barrels[barrel_number].append(row)
 
 # Create the output directory if it doesn't exist
-output_dir = "./dataset/DocumentBarrels"
+output_dir = "./dataset/dbs"
 os.makedirs(output_dir, exist_ok=True)
 
 # Write each barrel's content to a CSV file
