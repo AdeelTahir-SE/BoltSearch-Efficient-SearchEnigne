@@ -1,124 +1,51 @@
-import {spawn} from "child_process"
-import { fileURLToPath } from 'url';
-import { dirname, resolve } from 'path';
+import { spawn } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+import { resolve } from 'node:path';
 
-export async function uploadDocument(filePath) {
-  const __filename = fileURLToPath(import.meta.url);
-  const __dirname = dirname(__filename);
-  
-  // Resolve the absolute path of the Python script
-  const scriptPath = resolve(__dirname, '../../server/file-upload/uploadFile.py'); // Adjust path as needed
-  
-  // Use a promise to wrap the Python script execution
-  return new Promise((resolve, reject) => {
-    const pythonProcess = spawn("python", [scriptPath, filePath]);
-
-    pythonProcess.stdout.on("data", (data) => {
-      console.log(`Output: ${data.toString()}`);
-    });
-
-    pythonProcess.stderr.on("data", (data) => {
-      console.log(`Error: ${data.toString()}`);
-    });
-
-    pythonProcess.on("close", (code) => {
-      if (code === 0) {
-        console.log(`Python script completed successfully with code ${code}`);
-        resolve(code); // Resolve the promise on success
-      } else {
-        console.error(`Python script exited with code ${code}`);
-        reject(`Python script failed with code ${code}`); // Reject the promise on failure
-      }
-    });
-  });
-}
-
-
-export function searchDocuments(args, limit) {
-  return new Promise((resolve, reject) => {
-    const words = args.split(" ");
-
-    // Run the Python script for each word in parallel
-    const promises = words.map((word) => runPythonScript(word, limit));
-
-    // Wait for all promises to resolve or reject
-    Promise.all(promises)
-      .then(async(results) => {
-
-        // After getting results, slice the first `limit` documents
-        const docs = results.slice(0, limit);
-        const sortedResults = mergeAndPrioritizeResults(docs, limit); // Pass limit to merge function
-        resolve(sortedResults);
-      })
-      .catch((error) => {
-        reject(`Error executing Python script: ${error}`);
-      });
-  });
-}
-
-function mergeAndPrioritizeResults(resultsArray, limit) {
-  const mergedResults = {};
-
-  // Aggregate results and count occurrences
-  resultsArray.forEach((results) => {
-    results.forEach((doc) => {
-      const docId = doc.Id;
-      if (!mergedResults[docId]) {
-        mergedResults[docId] = { ...doc, occurrence: 1 };
-      } else {
-        mergedResults[docId].occurrence += 1;
-        mergedResults[docId].Score += doc.Score; // Adjust if needed
-      }
-    });
-  });
-
-  // Convert to array and sort
-  const sortedResults = Object.values(mergedResults).sort((a, b) => {
-    // Primary: Sort by occurrences
-    if (b.occurrence !== a.occurrence) {
-      return b.occurrence - a.occurrence;
-    }
-
-    // Secondary: Sort by Score
-    if (b.Score !== a.Score) {
-      return b.Score - a.Score;
-    }
-    if(b.CreationDate !== a.CreationDate){
-    return b.CreationDate - a.CreationDate;
-    }
-  });
-
-  return sortedResults.slice(0, limit);
-}
-
-
-function runPythonScript(word,limit) {
-  return new Promise((resolve, reject) => {
-    const pythonProcess = spawn("python", ["./search-query/searchDos.py", word,limit]);
-    
-    let output = "";
-    let errorOutput = "";
-
-    pythonProcess.stdout.on("data", (data) => {
+const serverRoot = fileURLToPath(new URL('../', import.meta.url));
+const cache = new Map();
+const pending = new Map();
+let generation = 0;
+let uploadQueue = Promise.resolve();
+function runPython(script, args, timeout = 30000) {
+  return new Promise((resolvePromise, reject) => {
+    const child = spawn(process.env.PYTHON || 'python', [resolve(serverRoot, script), ...args.map(String)], { cwd: serverRoot, windowsHide: true });
+    let output = '', errors = '';
+    const timer = setTimeout(() => { child.kill(); reject(new Error('Document processing timed out.')); }, timeout);
+    child.on('error', error => { clearTimeout(timer); reject(error); });
+    child.stdout.on('data', data => {
       output += data.toString();
+      if (output.length > 16 * 1024 * 1024) { child.kill(); reject(new Error('Search response is too large.')); }
     });
-
-    pythonProcess.stderr.on("data", (data) => {
-      errorOutput += data.toString();
-    });
-
-    pythonProcess.on("close", (code) => {
-      if (code === 0) {
-        try {
-          // Parse JSON output
-          const results = JSON.parse(output.trim());
-          resolve(results);
-        } catch (error) {
-          reject(`Failed to parse Python script output for word "${word}": ${error}`);
-        }
-      } else {
-        reject(`Python script exited with code ${code} for word "${word}": ${errorOutput}`);
-      }
+    child.stderr.on('data', data => { errors = (errors + data.toString()).slice(-8000); });
+    child.on('close', code => {
+      clearTimeout(timer);
+      if (code !== 0) return reject(new Error(errors.trim() || `Document processing exited with code ${code}.`));
+      try { resolvePromise(JSON.parse(output)); } catch { reject(new Error('Invalid response from document processor.')); }
     });
   });
+}
+export function uploadDocument(filePath) {
+  // Serialize index writes; overlapping CSV rewrites can otherwise lose documents.
+  const task = uploadQueue.then(() => runPython('file-upload/uploadFile.py', [filePath], 120000));
+  uploadQueue = task.catch(() => {});
+  return task.finally(() => { generation++; cache.clear(); pending.clear(); });
+}
+export async function searchDocuments(query, limit = 10) {
+  const normalized = query.toLowerCase().trim().replace(/\s+/g, ' ');
+  const key = JSON.stringify([generation, normalized, limit]);
+  const hit = cache.get(key);
+  if (hit && hit.expires > Date.now()) return hit.documents;
+  if (pending.has(key)) return pending.get(key);
+  const currentGeneration = generation;
+  const task = runPython('search-query/searchDos.py', [normalized, limit]).then(documents => {
+    if (!Array.isArray(documents)) throw new Error('Invalid search result.');
+    if (currentGeneration === generation) {
+      if (cache.size >= 100) cache.delete(cache.keys().next().value);
+      cache.set(key, { documents, expires: Date.now() + 30000 });
+    }
+    return documents;
+  }).finally(() => pending.delete(key));
+  pending.set(key, task);
+  return task;
 }

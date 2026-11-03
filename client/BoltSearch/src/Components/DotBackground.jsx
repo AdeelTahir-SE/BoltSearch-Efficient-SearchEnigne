@@ -1,6 +1,6 @@
-import React from "react";
 
-export function DotBackground({children}) {
+// eslint-disable-next-line react/prop-types
+export function DotBackground({ children }) {
   return (
     (<div
       className=" w-full dark:bg-black bg-black  dark:bg-dot-white/[0.2] bg-dot-white/[0.2] relative flex items-center justify-center">

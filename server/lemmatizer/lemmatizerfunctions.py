@@ -1,5 +1,4 @@
 import nltk
-import pandas as pd
 from nltk.stem import WordNetLemmatizer
 from nltk import pos_tag, word_tokenize
 import os
@@ -70,6 +69,7 @@ def wordToken(text):
 
 
 def remove_duplicates_and_save(file_path):
+    import pandas as pd
  
     if not os.path.exists(file_path):
         print(f"File not found: {file_path}")

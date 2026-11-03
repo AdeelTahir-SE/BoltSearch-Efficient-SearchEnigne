@@ -1,0 +1,29 @@
+{
+  "name": "StackSample source-grounded evaluation 50 v1",
+  "created": "2026-10-31",
+  "cases": 50,
+  "categories": {
+    "direct": 30,
+    "harder": 10,
+    "unanswerable": 10
+  },
+  "splits": {
+    "development": 30,
+    "holdout": 20
+  },
+  "unique_reviewed_source_documents": 45,
+  "topics": 16,
+  "references": "Agent-reviewed against stored source text; not human or current-technical-correctness adjudicated.",
+  "difficulty": "Intended constraint/contrast/multi-detail difficulty, not empirically validated; no cross-document case claimed.",
+  "evaluation_status": "Evaluated once on 2026-10-31 in frozen parsing-off/on comparison; holdout outcomes observed.",
+  "dataset_file_sha256": "71958a765149fe5d0ccce45bb29a208d008d73c338553a6093c490ff4b07759b",
+  "negative_types": {
+    "synthetic_absent_entity": 5,
+    "missing_detail_in_named_post": 5
+  },
+  "holdout_policy": "Do not tune prompts or retrieval using holdout outcomes. Once examined for tuning, create a new holdout.",
+  "observed_runs": [
+    "expanded50-parsing-off-20261031",
+    "expanded50-parsing-on-20261031"
+  ]
+}
